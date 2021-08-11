@@ -1,44 +1,15 @@
 import express from "express";
 import axios from "axios";
 import { DriversApiResponse } from "./types";
-import cors from "cors"
-import { query, validationResult, ValidationChain } from "express-validator";
+import { corsMiddleware, driversParamsValidationMiddleware  } from "./middleware";
 
 const app = express();
 const PORT = 8000;
 
-const allowedOrigins = ['http://localhost:3000'];
 
-const options: cors.CorsOptions = {
-  origin: allowedOrigins
-};
-
-
-const validate = (validations: ValidationChain[]) => {
-    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      await Promise.all(validations.map(validation => validation.run(req)));
-  
-      const errors = validationResult(req);
-      if (errors.isEmpty()) {
-        return next();
-      }
-  
-      res.status(400).json({ errors: errors.array() });
-    };
-  };
-
-const getDriversValidator = validate([
-    query('latitude').isFloat({min:-90,max:90}),
-    query('longitude').isFloat({min:-180,max:180}),
-    query('count').isNumeric()
-])
-  
-
-
-
-app.use(cors(options));
+app.use(corsMiddleware);
 app.get('/', (req, res) => res.send('Express + TypeScript Server'));
-app.get('/drivers', getDriversValidator, async (req, res) => {
+app.get('/drivers', driversParamsValidationMiddleware, async (req, res) => {
     const driverRequest = req.query;
     try {
         const result = await axios.get("https://qa-interview-test.splytech.dev/api/drivers", {
